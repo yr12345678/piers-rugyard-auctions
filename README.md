@@ -15,3 +15,5 @@ The blueprint for the Piers Rugyard NFT collection minting and auction component
     * If an auction ends without bids, the first bidder after the auction ended will be the winner of the auction. The auction will be settled immediately.
 * After an auction is settled and there is another NFT available to be auctioned, a new auction will start automatically.
 
+An account locker is used to store/route reward and NFT deposits.
+
