@@ -17,3 +17,37 @@ The blueprint for the Piers Rugyard NFT collection minting and auction component
 
 An account locker is used to store/route reward and NFT deposits.
 
+## Types
+
+### Auction
+* `id`: u64,
+* `start_timestamp`: Instant
+* `end_timestamp`: Instant
+* `nft`: NonFungibleLocalId
+* `highest_bid`: Option<Decimal>
+* `highest_bidder`: Option<Global<Account>>
+
+### NFT
+* `key_image_url`: Url
+* `name`: String
+
+## Events
+
+### PiersRugyardMinted
+* `id`: NonFungibleLocalId
+* `nft_data`: NFT
+
+### PiersRugyardAuctionStarted
+* `auction`: Auction
+
+### PiersRugyardAuctionSettled
+* `auction`: Auction
+
+### PiersRugyardAuctionBid
+* `auction`: Auction
+* `bid`: Decimal
+
+### PiersRugyardEarlyBuy
+* `xrd_amount`: Decimal
+* `pub early_amount`: Decimal
+
