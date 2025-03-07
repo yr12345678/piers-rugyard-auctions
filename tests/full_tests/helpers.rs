@@ -7,6 +7,9 @@ pub struct Account {
     pub address: ComponentAddress,
 }
 
+#[derive(ScryptoSbor, NonFungibleData, Debug, PartialEq, Clone)]
+pub struct XRDDomain {}
+
 // Creates a new account
 pub fn create_account(ledger: &mut DefaultLedgerSimulator) -> Account {
     let (public_key, private_key, address) = ledger.new_allocated_account();
@@ -86,6 +89,9 @@ pub fn create_test_environment() -> (
     // Create mock owner resource
     let owner_resource = ledger.create_fungible_resource(dec!(1), 0, account.address);
 
+    // Create mock XRD Domain
+    let xrd_domain = ledger.create_non_fungible_resource(account.address);
+
     // Publish NFT package
     let nft_package_address = ledger.compile_and_publish(this_package!());
 
@@ -102,7 +108,8 @@ pub fn create_test_environment() -> (
                 dec!(50),
                 owner_resource,
                 pool_component,
-                early_resource
+                early_resource,
+                xrd_domain
             ),
         )
         .build();
@@ -143,23 +150,11 @@ pub fn create_prepared_test_environment() -> (
         .create_proof_from_account_of_amount(account.address, owner_resource, dec!(1))
         .call_method(
             nft_component,
-            "mint_nft",
-            manifest_args!((
-                "https://www.google.com",
-                "My NFT 1",
-                "my attribute 1",
-                "my attribute 2"
-            )),
-        )
-        .call_method(
-            nft_component,
-            "mint_nft",
-            manifest_args!((
-                "https://www.google.com",
-                "My NFT 2",
-                "my attribute 1",
-                "my attribute 2"
-            )),
+            "mint_nfts",
+            manifest_args!(vec![
+                ("https://www.google.com", "My NFT 1"),
+                ("https://www.google.com", "My NFT 2")
+            ]),
         )
         .call_method(nft_component, "flip_status", manifest_args!())
         .call_method(nft_component, "start_new_auction", manifest_args!())

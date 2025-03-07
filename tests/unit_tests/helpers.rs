@@ -4,6 +4,9 @@ use piers_rugyard::types::*;
 use scrypto::prelude::Url;
 use scrypto_test::prelude::*;
 
+#[derive(ScryptoSbor, NonFungibleData, Debug, PartialEq, Clone)]
+pub struct XRDDomain {}
+
 /// Creates an account reference with an owner role we can actually create a proof of
 pub fn create_account(
     env: &mut TestEnvironment<InMemorySubstateDatabase>,
@@ -42,6 +45,10 @@ pub fn create_test_environment() -> Result<
         ResourceBuilder::new_fungible(OwnerRole::None).mint_initial_supply(1, &mut env)?;
     let owner_resource_address = owner_resource_bucket.0.resource_address(&mut env)?;
 
+    let mock_xrd_domain: NonFungibleBucket =
+        ResourceBuilder::new_ruid_non_fungible(OwnerRole::None)
+            .mint_initial_supply(vec![XRDDomain {}], &mut env)?;
+
     let (_oci_pool, oci_pool_address, early_resource_address) = instantiate_oci_pool(&mut env)?;
 
     // Instantiate PiersRugyard component
@@ -54,6 +61,7 @@ pub fn create_test_environment() -> Result<
         owner_resource_address,
         oci_pool_address,
         early_resource_address,
+        mock_xrd_domain.resource_address(&mut env)?,
         nft_collection_package_address,
         &mut env,
     )?;
@@ -76,25 +84,8 @@ pub fn create_prepared_test_environment() -> Result<
     LocalAuthZone::push(proof, &mut env)?;
 
     // Mint NFTs
-    component.mint_nft(
-        NFT {
-            key_image_url: Url::of("https://www.google.com/"),
-            name: "My NFT!".to_string(),
-            attribute1: "Worm".to_string(),
-            attribute2: "Gears changed".to_string(),
-        },
-        &mut env,
-    )?;
-
-    component.mint_nft(
-        NFT {
-            key_image_url: Url::of("https://www.google.com/2"),
-            name: "My NFT 2!".to_string(),
-            attribute1: "Redhead".to_string(),
-            attribute2: "Mojo".to_string(),
-        },
-        &mut env,
-    )?;
+    mint_nfts(&mut env, component)?;
+    mint_nfts(&mut env, component)?;
 
     // Activate auctions
     component.flip_status(&mut env)?;
@@ -130,17 +121,15 @@ pub fn instantiate_oci_pool(
 }
 
 /// Helper function to mint an NFT
-pub fn mint_nft(
+pub fn mint_nfts(
     env: &mut TestEnvironment<InMemorySubstateDatabase>,
     mut component: PiersRugyard,
 ) -> Result<(), RuntimeError> {
-    component.mint_nft(
-        NFT {
+    component.mint_nfts(
+        vec![NFT {
             key_image_url: Url::of("https://www.google.com/"),
             name: "My NFT!".to_string(),
-            attribute1: "Worm".to_string(),
-            attribute2: "Gears changed".to_string(),
-        },
+        }],
         env,
     )?;
 

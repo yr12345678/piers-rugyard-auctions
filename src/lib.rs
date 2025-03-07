@@ -20,7 +20,7 @@ mod piers_rugyard {
             settle_auction => PUBLIC;
             start_new_auction => PUBLIC;
             bid => PUBLIC;
-            mint_nft => restrict_to: [OWNER];
+            mint_nfts => restrict_to: [OWNER];
             withdraw_profits => restrict_to: [OWNER];
             update_pool_address => restrict_to: [OWNER];
             update_auction_duration => restrict_to: [OWNER];
@@ -31,6 +31,8 @@ mod piers_rugyard {
             get_current_auction => PUBLIC;
             get_completed_auction => PUBLIC;
             get_profit_amount => PUBLIC;
+            deposit_xrd_domain => restrict_to: [OWNER];
+            withdraw_xrd_domain => restrict_to: [OWNER];
         }
     }
 
@@ -52,6 +54,8 @@ mod piers_rugyard {
         available_nfts_list: Vec<NonFungibleLocalId>,
         next_nft_id: u64,
         next_auction_id: u64,
+        xrd_domain_resource: ResourceAddress,
+        xrd_domain_vault: NonFungibleVault,
     }
 
     impl PiersRugyard {
@@ -62,6 +66,7 @@ mod piers_rugyard {
             owner_resource: ResourceAddress,
             early_pool: ComponentAddress,
             early_address: ResourceAddress,
+            xrd_domain_resource: ResourceAddress,
         ) -> Global<PiersRugyard> {
             // Get the component address
             let (address_reservation, component_address) =
@@ -128,6 +133,8 @@ mod piers_rugyard {
                 available_nfts_list: Vec::new(),
                 next_nft_id: 1,
                 next_auction_id: 1,
+                xrd_domain_resource,
+                xrd_domain_vault: NonFungibleVault::new(xrd_domain_resource),
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::Updatable(owner_rule.clone()))
@@ -208,7 +215,7 @@ mod piers_rugyard {
             Runtime::assert_access_rule(account.get_owner_role().rule);
 
             let current_timestamp = Clock::current_time(TimePrecisionV2::Second);
-            let auction = self.current_auction.as_mut().expect("No auction active!");
+            let auction: &mut Auction = self.current_auction.as_mut().expect("No auction active!");
             let highest_bid_amount = auction.highest_bid.unwrap_or(dec!(0));
 
             // Emit event here so we can clone `auction`
@@ -243,7 +250,10 @@ mod piers_rugyard {
             let current_timestamp_plus_buffer = current_timestamp
                 .add_minutes(self.auction_buffer_minutes as i64)
                 .expect("Could not add minutes!");
-            if current_timestamp_plus_buffer > auction.end_timestamp {
+
+            if current_timestamp_plus_buffer >= auction.end_timestamp
+                && current_timestamp < auction.end_timestamp
+            {
                 auction.end_timestamp = current_timestamp_plus_buffer;
             }
 
@@ -254,6 +264,7 @@ mod piers_rugyard {
 
             // If this was the first bid AND the auction has ended, we might as well settle it immediately
             if first_bidder && current_timestamp >= auction.end_timestamp {
+                info!("Settling auction");
                 self.settle_auction(account);
             }
         }
@@ -410,23 +421,23 @@ mod piers_rugyard {
         ///
         /// # Input
         /// * `nft_data`: an NFT struct with the data for the new NFT        
-        pub fn mint_nft(&mut self, nft_data: NFT) {
-            let local_id = NonFungibleLocalId::integer(self.next_nft_id);
-            let nft = self
-                .nft_manager
-                .mint_non_fungible(&local_id, nft_data.clone());
+        pub fn mint_nfts(&mut self, nft_data: Vec<NFT>) {
+            for data in nft_data {
+                let local_id = NonFungibleLocalId::integer(self.next_nft_id);
+                let nft = self.nft_manager.mint_non_fungible(&local_id, data.clone());
 
-            // Put NFT in vault and in available NFTs list
-            self.available_nfts_list.push(local_id.clone());
-            self.available_nfts_vault.put(nft);
+                // Put NFT in vault and in available NFTs list
+                self.available_nfts_list.push(local_id.clone());
+                self.available_nfts_vault.put(nft);
 
-            Runtime::emit_event(PiersRugyardMinted {
-                id: local_id,
-                nft_data,
-            });
+                Runtime::emit_event(PiersRugyardMinted {
+                    id: local_id,
+                    nft_data: data,
+                });
 
-            // Increment the NFT id
-            self.next_nft_id += 1;
+                // Increment the NFT id
+                self.next_nft_id += 1;
+            }
         }
 
         /// Removes an NFT from the available NFTs list and burns it. This method is protected.
@@ -459,6 +470,33 @@ mod piers_rugyard {
             self.available_nfts_list.remove(nft_position);
             self.available_nfts_vault.take_non_fungible(&id).burn();
         }
+
+        /// Deposits an XRD domain into the vault
+        /// 
+        /// # Input
+        /// * `domain`: a NonFungibleBucket containing the XRD Domain
+        /// 
+        /// # Panics
+        /// * The resource address is incorrect
+        pub fn deposit_xrd_domain(&mut self, domain: NonFungibleBucket) {
+            assert!(domain.resource_address() == self.xrd_domain_resource, "Not an XRD Domain");
+
+            self.xrd_domain_vault.put(domain);
+        }
+
+        /// Withdraws an XRD domain from the vault
+        /// 
+        /// # Input
+        /// * `local_id`: the NonFungibleLocalId of the XRD Domain
+        /// 
+        /// # Output
+        /// * A NonFungibleBucket containing the XRD Domain
+        /// 
+        /// # Panics
+        /// * The domain is not present in the vault
+        pub fn withdraw_xrd_domain(&mut self, local_id: NonFungibleLocalId) -> NonFungibleBucket {
+            self.xrd_domain_vault.take_non_fungibles(&indexset!(local_id))
+        }        
 
         //------ Getters ------//
         /// TODO - Add more getters

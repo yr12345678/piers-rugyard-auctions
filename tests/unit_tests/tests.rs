@@ -25,7 +25,7 @@ fn can_mint_nft() -> Result<(), RuntimeError> {
         .expect("Could not get supply!");
 
     // Act
-    mint_nft(&mut env, component)?;
+    mint_nfts(&mut env, component)?;
 
     // Assert
     let new_available_nfts_count = get_state_available_nfts_list(&mut env, component)?.len();
@@ -52,7 +52,7 @@ fn cannot_mint_nft_without_owner() -> Result<(), RuntimeError> {
     let (mut env, component, _owner_resource) = create_prepared_test_environment()?;
 
     // Act
-    let result = mint_nft(&mut env, component);
+    let result = mint_nfts(&mut env, component);
 
     // Assert
     assert!(result.is_err(), "Could mint NFT without owner badge!");
@@ -745,13 +745,14 @@ fn can_bid_ended_auction_without_bids() -> Result<(), RuntimeError> {
         .get_current_auction(&mut env)
         .expect("Couldn't get active auction")
         .expect("No active auction");
+
     env.set_current_time(current_auction.end_timestamp.add_hours(1).unwrap()); // Move time past the end time
 
     // Act
-    let result = component.bid(xrd_bucket.into(), account, &mut env);
+    let result = component.bid(xrd_bucket.into(), account, &mut env); // This should settle the first auction and start the second
 
     // Assert
-    let current_auction = component
+    let current_auction: Auction = component
         .get_current_auction(&mut env)
         .expect("Couldn't get active auction")
         .expect("No active auction");
@@ -761,10 +762,7 @@ fn can_bid_ended_auction_without_bids() -> Result<(), RuntimeError> {
         "Could not bid on ended auction without bids"
     );
 
-    assert!(
-        current_auction.highest_bid.unwrap() == dec!(1000),
-        "Highest bid was not 1000"
-    );
+    assert!(current_auction.id == 2, "First auction wasn't settled");
 
     Ok(())
 }

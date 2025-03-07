@@ -14,6 +14,4 @@ pub struct Auction {
 pub struct NFT {
     pub key_image_url: Url,
     pub name: String,
-    pub attribute1: String,
-    pub attribute2: String,
 }
