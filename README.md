@@ -2,8 +2,8 @@ The blueprint for the Piers Rugyard NFT collection minting and auction component
 
 ## Components
 
-Stokenet: `component_tdx_2_1cz3r88mksf55qf7avskt2checjgaec2edrvfjph9gvdp3gusvqm88p`
-Mainnet: not yet deployed
+* Stokenet: `component_tdx_2_1cz3r88mksf55qf7avskt2checjgaec2edrvfjph9gvdp3gusvqm88p`
+* Mainnet: not yet deployed
 
 ## How it works
 
