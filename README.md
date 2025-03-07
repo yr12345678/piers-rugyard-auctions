@@ -24,8 +24,8 @@ An account locker is used to store/route reward and NFT deposits.
 * `start_timestamp`: Instant
 * `end_timestamp`: Instant
 * `nft`: NonFungibleLocalId
-* `highest_bid`: Option<Decimal>
-* `highest_bidder`: Option<Global<Account>>
+* `highest_bid`: Option\<Decimal\>
+* `highest_bidder`: Option<Global\<Account\>>
 
 ### NFT
 * `key_image_url`: Url
