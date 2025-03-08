@@ -99,6 +99,7 @@ fn perform_complete_auction() {
             "settle_auction",
             manifest_args!(account1.address),
         )
+        .deposit_batch(account1.address, ManifestExpression::EntireWorktop)
         .build();
 
     let receipt = ledger.execute_manifest(

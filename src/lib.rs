@@ -210,7 +210,7 @@ mod piers_rugyard {
         /// * Bid resource is invalid
         /// * Bid increase is too low
         /// * Bid happens after auction ended while there was already a bid
-        pub fn bid(&mut self, bid: Bucket, account: Global<Account>) {
+        pub fn bid(&mut self, bid: Bucket, account: Global<Account>) -> (Option<FungibleBucket>, Option<NonFungibleBucket>) {
             // Ensure the caller owns the account
             Runtime::assert_access_rule(account.get_owner_role().rule);
 
@@ -265,7 +265,11 @@ mod piers_rugyard {
             // If this was the first bid AND the auction has ended, we might as well settle it immediately
             if first_bidder && current_timestamp >= auction.end_timestamp {
                 info!("Settling auction");
-                self.settle_auction(account);
+                let (reward, nft) = self.settle_auction(account);
+
+                (Some(reward), nft)
+            } else {
+                (None, None)
             }
         }
 
@@ -281,7 +285,7 @@ mod piers_rugyard {
         /// # Panics
         /// * Auction has not ended yet
         /// * There is no bid yet
-        pub fn settle_auction(&mut self, account: Global<Account>) {
+        pub fn settle_auction(&mut self, account: Global<Account>) -> (FungibleBucket, Option<NonFungibleBucket>) {
             // Ensure the caller owns the account
             Runtime::assert_access_rule(account.get_owner_role().rule);
 
@@ -305,10 +309,15 @@ mod piers_rugyard {
                 "No bids were made. Wait until at least 1 bid was made."
             );
 
-            // Deposit NFT to the winner
+            // Deposit NFT to the winner. If the current caller is the winner, give it to them directly
             let nft = self.available_nfts_vault.take_non_fungible(&auction.nft);
-            self.locker
+            let mut nft_bucket: Option<NonFungibleBucket> = None;
+            if auction.highest_bidder.unwrap() == account {
+                nft_bucket = Some(nft);
+            } else {
+                self.locker
                 .store(auction.highest_bidder.unwrap(), nft.into(), true);
+            }
 
             // Take the reward for the account calling this method
             let mut highest_bid_bucket = self.highest_bid_vault.take_all();
@@ -318,7 +327,6 @@ mod piers_rugyard {
                 .expect("Couldn't calculate reward!");
             let reward_bucket = highest_bid_bucket
                 .take_advanced(reward, WithdrawStrategy::Rounded(RoundingMode::ToZero));
-            self.locker.store(account, reward_bucket.into(), true);
 
             // Swap for EARLY and deposit
             let highest_bid_amount = highest_bid_bucket.amount();
@@ -342,6 +350,8 @@ mod piers_rugyard {
             if !self.available_nfts_list.is_empty() && self.active {
                 self.start_new_auction();
             }
+
+            (reward_bucket, nft_bucket)
         }
 
         //------ Admin stuff ------//
