@@ -11,6 +11,7 @@ The blueprint for the Piers Rugyard NFT collection minting and auction component
 * Owner sets the component to active to allow auctions to start and starts the first auction
 * The auction has a duration and a buffer (time before auction ends). If a bid is made in the buffer, the auction is extended. 
 * Accounts can bid on the NFT with XRD
+* If the new bid is valid, the previous bid is immediately returned to the original account.
 * Once the auction ends, bidding is no longer possible and the auction must be settled. Settling an auction is incentivized with 5% of the winning bid for the settler to keep things moving smoothly.
     * If an auction ends without bids, the first bidder after the auction ended will be the winner of the auction. The auction will be settled immediately.
 * After an auction is settled and there is another NFT available to be auctioned, a new auction will start automatically.
