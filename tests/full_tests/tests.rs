@@ -163,3 +163,68 @@ fn perform_complete_auction() {
         "Did not withdraw profit succesfully"
     );
 }
+
+#[test]
+fn perform_massive_auction_cost_test() {
+    // Create a test environment with an active auction
+    let (mut ledger, component, nft_resource, owner_resource, early_resource, owner_account) =
+        create_prepared_test_environment();
+    let account1 = create_account(&mut ledger);
+    let account2 = create_account(&mut ledger);
+    let account3 = create_account(&mut ledger);
+
+    // Place bids with account 2
+    get_shitton_of_xrd(&mut ledger, &account2);
+    for _ in 0..80 {
+        complete_auction_process(&mut ledger, &account2, component);
+    }
+}
+
+fn complete_auction_process(ledger: &mut DefaultLedgerSimulator, account: &crate::full_tests::helpers::Account, component: ComponentAddress) {
+    for i in 1..10 {
+        let bid_amount = i * 50;
+        let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .withdraw_from_account(account.address, XRD, Decimal::from(bid_amount))
+            .take_all_from_worktop(XRD, "xrd_bucket")
+            .call_method_with_name_lookup(component, "bid", |lookup| {
+                (lookup.bucket("xrd_bucket"), account.address)
+            })
+            .build();
+
+        let receipt = ledger.execute_manifest(
+            manifest,
+            vec![NonFungibleGlobalId::from_public_key(&account.public_key)],
+        );
+
+        let cost = receipt.fee_summary.total_cost();
+        println!("Bid {} cost {}", i, cost);    
+        let auction: Auction = get_current_auction(ledger, component, account).unwrap();
+        println!("{:?}", auction.bid_history)
+    }
+
+    // Forward time to end the auction
+    let auction: Auction = get_current_auction(ledger, component, account).unwrap();
+    println!("Bid count: {}", auction.bid_count);
+    change_time(ledger, auction.end_timestamp);
+
+    // Settle auction with account 1
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_method(
+            component,
+            "settle_auction",
+            manifest_args!(account.address),
+        )
+        .deposit_batch(account.address, ManifestExpression::EntireWorktop)
+        .build();
+
+    let receipt = ledger.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&account.public_key)],
+    );
+
+    receipt.expect_commit_success();
+    let cost = receipt.fee_summary.total_cost();
+    println!("settle cost {}", cost);  
+}

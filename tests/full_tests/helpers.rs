@@ -144,6 +144,12 @@ pub fn create_prepared_test_environment() -> (
     let (mut ledger, nft_component, nft_resource, owner_resource, early_resource, account) =
         create_test_environment();
 
+    // NFTs
+    let mut nfts = vec![];
+    for i in 0..80 {
+        nfts.push(("https://www.google.com", format!("My NFT {i}")));
+    }
+
     // Mint NFTs and start auction
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -151,10 +157,7 @@ pub fn create_prepared_test_environment() -> (
         .call_method(
             nft_component,
             "mint_nfts",
-            manifest_args!(vec![
-                ("https://www.google.com", "My NFT 1"),
-                ("https://www.google.com", "My NFT 2")
-            ]),
+            manifest_args!(nfts),
         )
         .call_method(nft_component, "flip_status", manifest_args!())
         .call_method(nft_component, "start_new_auction", manifest_args!())
