@@ -9,7 +9,7 @@ pub struct Auction {
     pub highest_bid: Option<Decimal>,
     pub highest_bidder: Option<Global<Account>>,
     pub bid_count: u64,
-    pub latest_bids: Vec<Decimal>
+    pub latest_bids: Vec<Bid>
 }
 
 #[derive(ScryptoSbor, PartialEq, Debug, Clone)]

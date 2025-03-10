@@ -235,7 +235,7 @@ mod piers_rugyard {
             if auction.latest_bids.len() == 10 {
                 auction.latest_bids.remove(0);
             }
-            auction.latest_bids.push(bid.amount());
+            auction.latest_bids.push(new_bid.clone());
 
             // Emit event here so we can clone `auction`
             Runtime::emit_event(PiersRugyardAuctionBid {

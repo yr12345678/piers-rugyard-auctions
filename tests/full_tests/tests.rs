@@ -200,7 +200,6 @@ fn complete_auction_process(ledger: &mut DefaultLedgerSimulator, account: &crate
         let cost = receipt.fee_summary.total_cost();
         println!("Bid {} cost {}", i, cost);    
         let auction: Auction = get_current_auction(ledger, component, account).unwrap();
-        println!("{:?}", auction.bid_history)
     }
 
     // Forward time to end the auction
