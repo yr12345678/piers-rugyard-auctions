@@ -20,7 +20,7 @@ pub struct PiersRugyardAuctionSettled {
 #[derive(ScryptoSbor, ScryptoEvent)]
 pub struct PiersRugyardAuctionBid {
     pub auction: Auction,
-    pub bid: Decimal,
+    pub bid: Bid,
 }
 
 #[derive(ScryptoSbor, ScryptoEvent)]

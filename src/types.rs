@@ -8,6 +8,16 @@ pub struct Auction {
     pub nft: NonFungibleLocalId,
     pub highest_bid: Option<Decimal>,
     pub highest_bidder: Option<Global<Account>>,
+    pub bid_count: u64,
+    pub bid_history: IndexMap<u64, Bid>
+}
+
+#[derive(ScryptoSbor, PartialEq, Debug, Clone)]
+pub struct Bid {
+    pub amount: Decimal,
+    pub bidder: Global<Account>,
+    pub timestamp: Instant,
+    pub transaction_hash: Hash
 }
 
 #[derive(ScryptoSbor, NonFungibleData, Debug, PartialEq, Clone)]

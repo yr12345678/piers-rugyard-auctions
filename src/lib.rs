@@ -46,6 +46,7 @@ mod piers_rugyard {
         available_nfts_vault: NonFungibleVault,
         highest_bid_vault: FungibleVault,
         early_vault: FungibleVault,
+        total_early_bought: Decimal,
         minimum_bid_increase: Decimal,
         locker: Global<AccountLocker>,
         owner_resource: ResourceAddress,
@@ -124,6 +125,7 @@ mod piers_rugyard {
                 available_nfts_vault: NonFungibleVault::new(nft_manager.address()),
                 highest_bid_vault: FungibleVault::new(XRD),
                 early_vault: FungibleVault::new(early_address),
+                total_early_bought: dec!(0),
                 minimum_bid_increase,
                 locker: account_locker,
                 owner_resource,
@@ -181,6 +183,8 @@ mod piers_rugyard {
                 nft: nft_local_id.clone(),
                 highest_bid: None,
                 highest_bidder: None,
+                bid_count: 0,
+                bid_history: IndexMap::new()
             };
 
             self.current_auction = Some(auction.clone());
@@ -218,10 +222,21 @@ mod piers_rugyard {
             let auction: &mut Auction = self.current_auction.as_mut().expect("No auction active!");
             let highest_bid_amount = auction.highest_bid.unwrap_or(dec!(0));
 
+            // Add the bid to the bid history
+            let new_bid = Bid {
+                amount: bid.amount(),
+                bidder: account,
+                timestamp: current_timestamp,
+                transaction_hash: Runtime::transaction_hash(),
+            };
+
+            auction.bid_count += 1;
+            auction.bid_history.insert(auction.bid_count, new_bid.clone());
+
             // Emit event here so we can clone `auction`
             Runtime::emit_event(PiersRugyardAuctionBid {
                 auction: auction.clone(),
-                bid: bid.amount(),
+                bid: new_bid,
             });
 
             // Assert the bid is valid
@@ -340,6 +355,7 @@ mod piers_rugyard {
                 early_amount: early_bucket.amount(),
             });
 
+            self.total_early_bought += early_bucket.amount();
             self.early_vault.put(early_bucket.as_fungible());
 
             // Settle the auction
