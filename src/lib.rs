@@ -184,7 +184,7 @@ mod piers_rugyard {
                 highest_bid: None,
                 highest_bidder: None,
                 bid_count: 0,
-                bid_history: Vec::new()
+                latest_bids: Vec::new()
             };
 
             self.current_auction = Some(auction.clone());
@@ -232,10 +232,10 @@ mod piers_rugyard {
 
             // Add this bid to the bid history. Keep the bid history to 10 pieces as to not brick the component.
             auction.bid_count += 1;
-            if auction.bid_history.len() == 10 {
-                auction.bid_history.remove(0);
+            if auction.latest_bids.len() == 10 {
+                auction.latest_bids.remove(0);
             }
-            auction.bid_history.push(bid.amount());
+            auction.latest_bids.push(bid.amount());
 
             // Emit event here so we can clone `auction`
             Runtime::emit_event(PiersRugyardAuctionBid {
