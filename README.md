@@ -55,8 +55,3 @@ An account locker is used to store/route reward and NFT deposits.
 ### PiersRugyardAuctionBid
 * `auction`: Auction
 * `bid`: Bid
-
-### PiersRugyardEarlyBuy
-* `xrd_amount`: Decimal
-* `pub early_amount`: Decimal
-
