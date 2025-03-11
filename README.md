@@ -36,7 +36,7 @@ An account locker is used to store/route reward and NFT deposits.
 
 ### Bid
 * `amount`: Decimal
-* `bidder`: Global<Account>
+* `bidder`: Global\<Account\>
 * `timestamp`: Instant
 * `transaction_hash`: Hash
 
